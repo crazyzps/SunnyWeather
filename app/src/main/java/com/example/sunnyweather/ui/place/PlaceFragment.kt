@@ -1,6 +1,7 @@
 package com.example.sunnyweather.ui.place
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.sunnyweather.databinding.FragmentPlaceBinding
+import com.example.sunnyweather.ui.weather.WeatherActivity
 
 /**
 @date:2022/3/21
@@ -21,7 +23,7 @@ import com.example.sunnyweather.databinding.FragmentPlaceBinding
 class PlaceFragment : Fragment() {
     private var _binding: FragmentPlaceBinding? = null
     private val binding get() = _binding!!
-    private val viewModel by lazy { ViewModelProvider(this).get(PlaceViewModel::class.java) }
+    val viewModel by lazy { ViewModelProvider(this).get(PlaceViewModel::class.java) }
     private lateinit var adapter: PlaceAdapter
 
     override fun onCreateView(
@@ -43,6 +45,18 @@ class PlaceFragment : Fragment() {
         requireActivity().lifecycle.addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (event.targetState == Lifecycle.State.CREATED) {
+                    source.lifecycle.removeObserver(this)
+                    if (viewModel.isPlaceSaved()) {
+                        val place = viewModel.getPlace()
+                        val intent = Intent(context, WeatherActivity::class.java).apply {
+                            putExtra("location_lng", place.location.lng)
+                            putExtra("location_lat", place.location.lat)
+                            putExtra("place_name", place.name)
+                        }
+                        startActivity(intent)
+                        activity?.finish()
+                        return
+                    }
                     val layoutManager = LinearLayoutManager(activity)
                     binding.rl.layoutManager = layoutManager
                     adapter = PlaceAdapter(this@PlaceFragment, viewModel.placeList)
@@ -71,7 +85,6 @@ class PlaceFragment : Fragment() {
                             result.exceptionOrNull()?.printStackTrace()
                         }
                     })
-                    source.lifecycle.removeObserver(this)
                 }
             }
         })
